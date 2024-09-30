@@ -1,11 +1,15 @@
 import sys
 from PySide6.QtCore import QRectF, QPropertyAnimation, QEasingCurve, Qt, Property, QSize
-from PySide6.QtGui import QPainter, QColor, QPixmap, QPainterPath, QIcon
+from PySide6.QtGui import QPainter, QColor, QPainterPath, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QApplication, QStyledItemDelegate, QStyle
 from PySide6.QtCore import Signal
 
 
 class ToggleSwitch(QWidget):
+    @property
+    def thumb_pos(self):
+        return self._thumb_pos
+
     stateChanged = Signal(bool)  # Add this line to declare the signal
 
     def __init__(self, parent=None):
@@ -116,6 +120,7 @@ class RoundedItemDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         return QSize(150, 120)  # Adjust based on your desired item geometry
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

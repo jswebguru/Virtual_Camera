@@ -388,7 +388,7 @@ class VirtualCameraApp(QMainWindow):
             return
         frame = cv2.resize(frame, (600, 400))
         frame = background_change(self.background_image, frame, self.blur_switch.switch.isChecked(),
-                                  self.green_screen_switch.switch.isChecked(), input_sessiion=self.session)
+                                  self.green_screen_switch.switch.isChecked(), input_session=self.session)
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
