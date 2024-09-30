@@ -3,20 +3,18 @@ import subprocess
 import sys
 import threading
 import time
-
 import cv2
 from background_removal import background_change, new_session
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
                                QWidget, QFileDialog, QPushButton, QSplashScreen)
 from PySide6.QtGui import QPixmap, QImage, QIcon, QPainter, QPainterPath, QMovie
-from PySide6.QtCore import QTimer, Qt, QPoint, QRectF, Slot, QEvent, QCoreApplication
+from PySide6.QtCore import QTimer, Qt, QPoint, QRectF, Slot, QEvent
 from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
 from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
 from virtual_cam import feed_frame_to_vir_cam
-from get_real_camera import update_camera_descriptions
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -31,7 +29,6 @@ AKV_CAM_COMMAND = [
     '640', '480'
 ]
 CONTROL_BUTTON_SIZE = 23
-
 
 
 class VirtualCameraApp(QMainWindow):
