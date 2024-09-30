@@ -1,0 +1,5 @@
+opencv-python
+PySide6~=6.7.2
+rembg[gpu]
+cv2-enumerate-cameras
+pywin32

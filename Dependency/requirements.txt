@@ -1,0 +1,17 @@
+Put AkVirtualCamera and ffmpeg here.
+
+The directory structure is like this
+
+Virtual-Camera/  
+│  
+├── Dependency/                         # Source files  
+│   ├── default_picture.jpg				# Default picture of your virtual Camera  
+│   ├── ffmpeg/  
+│   │   ├── bin/ 
+│   │   ├── doc/  
+│   │   └── presets  
+│   └── AkVirtualCamera/  
+│       ├── x64/  
+│       ├── x32/  
+		├── share/  
+	    └── uninstall.exe  

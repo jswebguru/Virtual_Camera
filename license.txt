@@ -1,0 +1,31 @@
+END USER LICENSE AGREEMENT  
+
+This End User License Agreement ("EULA") is a legal agreement between you and the Meetn Development Team. By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this EULA.  
+
+1. GRANT OF LICENSE  
+Meetn grants you a limited, non-exclusive, non-transferable license to use the Software solely for your personal or internal business purposes.  
+
+2. RESTRICTIONS  
+You may not:  
+  - Modify, reverse engineer, decompile, or disassemble the Software.  
+  - Rent, lease, lend, sell, distribute, or sublicense the Software.  
+  - Use the Software for any unlawful or prohibited activities.  
+
+3. COPYRIGHT  
+The Software is owned by Meetn and is protected by international copyright laws.  
+
+4. LIMITATION OF LIABILITY  
+In no event shall Meetn be liable for any damages arising out of the use or inability to use the Software, even if Meetn has been advised of the possibility of such damages.  
+
+5. TERMINATION  
+This EULA is effective until terminated. Your rights under this EULA will terminate automatically without notice from Meetn if you fail to comply with any term(s) of this EULA.  
+
+6. GOVERNING LAW  
+This EULA will be governed by the laws of [-------------].  
+
+By clicking "I Agree," you acknowledge that you have read this EULA, understand it, and agree to be bound by its terms and conditions.  
+
+IF YOU DO NOT AGREE TO THIS EULA, DO NOT INSTALL OR USE THE SOFTWARE.  
+
+Meetn
+service@meetn.com (maybe)
