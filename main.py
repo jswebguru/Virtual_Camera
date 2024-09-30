@@ -46,7 +46,6 @@ class VirtualCameraApp(QMainWindow):
         self.background_image = None
         # Start the AkVCamManager process
         self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=CREATION_FLAGS)
-        print('here', self.pre_path)
         self.setStyleSheet(f"""  
             QLabel, QPushButton {{  
                 color: white;  
@@ -354,7 +353,7 @@ class VirtualCameraApp(QMainWindow):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.offset = event.pos()
+            self.offset = QPoint(event.position().x(), event.position().y())
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
