@@ -8,11 +8,13 @@ CREATION_FLAGS = 0
 if sys.platform == "win32":
     CREATION_FLAGS = subprocess.CREATE_NO_WINDOW
 # Check here if not working: Computer\HKEY_CLASSES_ROOT\CLSID\{860BB310-5D01-11d0-BD3B-00A0C911CE86}
+
+
 def set_system_path():
-    '''
+    """
     1. set ffmpeg as a system environment path variable
     2. set akvcammanager as a system environment path variable
-    '''
+    """
     ffmpeg_path = 'Dependency/ffmpeg/bin'
     akvcammanager_path = 'Dependency/AkVirtualCamera/x64'
 
@@ -37,7 +39,8 @@ def set_system_path():
         # Make sure to use PowerShell for modifying PATH
         try:
             command = rf'[System.Environment]::SetEnvironmentVariable("PATH", "{new_path}", "Machine")'
-            completed_process = subprocess.run(['powershell', '-Command', command], capture_output=True, text=True, creationflags=CREATION_FLAGS)
+            completed_process = subprocess.run(['powershell', '-Command', command], capture_output=True,
+                                               text=True, creationflags=CREATION_FLAGS)
             if completed_process.returncode != 0:
                 print(f"Error setting system PATH: {completed_process.stderr}")
             else:
@@ -47,14 +50,14 @@ def set_system_path():
 
 
 def create_virtual_camera():
-    '''
+    """
     Create virtual camera as 'VirtualCamera0' and update
     :return:
-    '''
+    """
     # Example command: list files in the current directory (Unix/Linux) or dir (Windows)
     abs_path = os.path.abspath('images/default_picture.jpg')
     commands = [
-        'AkVCamAssistant -i' # It's very important.
+        'AkVCamAssistant -i'  # It's very important.
         'AkVCamManager remove-devices',
         'AkVCamManager update',
         'AkVCamManager add-device -i "AkVCamVideoDevice0" "Virtual Camera"',
@@ -80,7 +83,8 @@ def create_virtual_camera():
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
+    except Exception as e:
+        logging.info(e, ' has occurred.')
         return False
 
 
@@ -92,6 +96,7 @@ def set_all_env():
     # print("PATH environment variable updated successfully.")
     create_virtual_camera()
     print('Virtual Camera created!!!')
+
 
 if __name__ == "__main__":
     # set_all_env()
