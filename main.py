@@ -358,11 +358,10 @@ class VirtualCameraApp(QMainWindow):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
-            self.move(event.globalPos() - self.offset)
+            self.move(event.globalPosition().toPoint() - self.offset)
 
     def closeEvent(self, event):
         self.stop_camera()
-
         self.akv_cam_proc.stdin.close()
         self.akv_cam_proc.wait()
         event.accept()
