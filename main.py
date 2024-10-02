@@ -7,15 +7,15 @@ import cv2
 from background_removal import background_change, new_session
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-                               QWidget, QFileDialog, QPushButton, QSplashScreen)
-from PySide6.QtGui import QPixmap, QImage, QIcon, QPainter, QPainterPath, QMovie
+                               QWidget, QFileDialog, QPushButton, QSplashScreen, QSystemTrayIcon, QMenu)
+from PySide6.QtGui import QPixmap, QImage, QIcon, QPainter, QPainterPath, QMovie, QAction
 from PySide6.QtCore import QTimer, Qt, QPoint, QRectF, Slot, QEvent
 from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
 from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
 from virtual_cam import feed_frame_to_vir_cam
-
+from virtual_cam import get_device_format
 CREATION_FLAGS = 0
 if sys.platform == "win32":
     CREATION_FLAGS = subprocess.CREATE_NO_WINDOW
@@ -40,6 +40,23 @@ class VirtualCameraApp(QMainWindow):
             self.pre_path = 'C:/Program Files/Meetn Bonus App/'
         self.cameras = None
         self.setWindowTitle("Meet Bonus App")
+        self.cur_vcam_width = 640
+        self.cur_vcam_height = 480
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(f'{self.pre_path}res/tray.jpg'))  # Make sure to provide an icon path
+
+        self.tray_menu = QMenu(self)
+        show_action = QAction("Show", self)
+        show_action.triggered.connect(self.show)
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.exit_application)
+
+        self.tray_menu.addAction(show_action)
+        self.tray_menu.addAction(exit_action)
+
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.offset = QPoint()
@@ -92,24 +109,41 @@ class VirtualCameraApp(QMainWindow):
             QPushButton#ControlButton {{ 
                 border: none;  
                 icon: url({self.pre_path}res/minimize.png);   
-                icon-size: 30px;  
+                icon-size: 23px; 
+                border-radius: 5px; 
                 background-color: gray;  
             }}  
             QPushButton#ControlButton:hover {{  
                 border: none;  
-                icon-size: 30px;  
+                icon-size: 23px; 
+                border-radius: 5px; 
                 icon: url({self.pre_path}res/hover/minimize.png);   
+            }}
+            QPushButton#MinimizeTrayButton {{ 
+                border: none;  
+                icon: url({self.pre_path}res/tray.png);   
+                icon-size: 25px;  
+                border-radius: 5px;
+                background-color: gray;  
+            }}  
+            QPushButton#MinimizeTrayButton:hover {{  
+                border: none;  
+                icon-size: 25px;  
+                border-radius: 5px;
+                icon: url({self.pre_path}res/hover/tray.png);   
             }}   
             QPushButton#CloseButton {{ 
                 border: none;  
-                icon: url(res/close.png);  
-                icon-size: 30px;              
+                icon: url({self.pre_path}res/close.png);  
+                icon-size: 23px;       
+                border-radius: 5px;       
                 background-color: gray;  
             }} 
             QPushButton#CloseButton:hover {{  
                 border: none;  
-                icon-size: 30px;  
-                icon: url(res/hover/close.png);  
+                icon-size: 23px;  
+                border-radius: 5px;
+                icon: url({self.pre_path}res/hover/close.png);  
             }}  
 
         """)
@@ -124,11 +158,20 @@ class VirtualCameraApp(QMainWindow):
 
         control_button_layout = QHBoxLayout()
 
+        minimize_tray_button = QPushButton('')
+        minimize_tray_button.setObjectName("MinimizeTrayButton")
+        minimize_tray_button.setFixedWidth(CONTROL_BUTTON_SIZE)
+        minimize_tray_button.setFixedHeight(CONTROL_BUTTON_SIZE)
+        minimize_tray_button.clicked.connect(self.minimize_to_tray)
+
+        control_button_layout.addWidget(minimize_tray_button)
+
         minimize_button = QPushButton('')
         minimize_button.setObjectName("ControlButton")
         minimize_button.setFixedWidth(CONTROL_BUTTON_SIZE)
         minimize_button.setFixedHeight(CONTROL_BUTTON_SIZE)
         minimize_button.clicked.connect(self.showMinimized)
+
         control_button_layout.addWidget(minimize_button)
 
         close_button = QPushButton("")
@@ -319,6 +362,7 @@ class VirtualCameraApp(QMainWindow):
 
     def update_image_list(self, path):
         self.bg_image_list.clear()
+        self.bg_image_list.scrollToTop()
         images = list_files_in_directory(path)
         for image in images:
             item = QListWidgetItem(QIcon(image), "")
@@ -360,6 +404,9 @@ class VirtualCameraApp(QMainWindow):
             self.move(event.globalPosition().toPoint() - self.offset)
 
     def closeEvent(self, event):
+
+        if self.tray_icon.isVisible():
+            self.tray_icon.hide()
         self.stop_camera()
         self.akv_cam_proc.stdin.close()
         self.akv_cam_proc.wait()
@@ -384,14 +431,36 @@ class VirtualCameraApp(QMainWindow):
         if not ret:
             self.camera_label.setText("Failed to capture image.")
             return
-        frame = cv2.resize(frame, (600, 400))
+        original_height, original_width = frame.shape[:2]
+        new_width = 640
+        new_height = int(new_width * original_height / original_width)
+        frame = cv2.resize(frame, (new_width, new_height))
         frame = background_change(self.background_image, frame, self.blur_switch.switch.isChecked(),
                                   self.green_screen_switch.switch.isChecked(), input_session=self.session)
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
         step = channel * width
+        if self.cur_vcam_width == width and self.cur_vcam_height == height:
+            pass
+        else:
+            print(width, height)
+            self.akv_cam_proc.stdin.close()
+            self.akv_cam_proc.wait()
+            AKV_CAM_COMMAND = [
+                'AkVCamManager',
+                'stream',
+                '--fps', '30',
+                'AkVCamVideoDevice0',
+                'RGB24',
+                str(width), str(height)
+            ]
+            self.cur_vcam_width = width
+            self.cur_vcam_height = height
+            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=CREATION_FLAGS)
         try:
+            print('initial: ', frame.shape)
+
             feed_frame_to_vir_cam(self.akv_cam_proc, frame)
 
         except Exception as e:
@@ -450,7 +519,17 @@ class VirtualCameraApp(QMainWindow):
             self.cam_dropdown.addItem(camera_detail)
         self.cam_dropdown.addItem('Sample Video')
 
+    def minimize_to_tray(self):
+        self.hide()
+        self.tray_icon.show()
 
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.Trigger:
+            self.show()
+            self.tray_icon.hide()
+
+    def exit_application(self):
+        self.close()
 done = False
 
 def loop(splash, movie):
@@ -474,6 +553,7 @@ def loop(splash, movie):
         QApplication.processEvents()
     movie.stop()
 
+
 if __name__ == "__main__":
 
     app = QApplication([])
@@ -481,16 +561,19 @@ if __name__ == "__main__":
         pre_path = ''
     else:
         pre_path = 'C:/Program Files/Meetn Bonus App/'
-
-    movie = QMovie(pre_path + 'res/loading.gif')
-    movie.start()
-    splash = QSplashScreen(movie.currentPixmap().scaled(1000, 600))
-    thread = threading.Thread(target=loop, args=(splash, movie))
-    splash.show()
-    thread.start()
-    window = VirtualCameraApp()
-    window.show()
-    done = True
-    thread.join()
-    splash.finish(window)
+    if len(sys.argv) <= 1 or sys.argv[1] != '--auto-run':
+        movie = QMovie(pre_path + 'res/loading.gif')
+        movie.start()
+        splash = QSplashScreen(movie.currentPixmap().scaled(1000, 600))
+        thread = threading.Thread(target=loop, args=(splash, movie))
+        splash.show()
+        thread.start()
+        window = VirtualCameraApp()
+        window.show()
+        done = True
+        thread.join()
+        splash.finish(window)
+    else:
+        window = VirtualCameraApp()
+        window.minimize_to_tray()
     sys.exit(app.exec())

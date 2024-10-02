@@ -1,0 +1,1 @@
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Meetn Bonus App"; ValueData: """{app}\Meetn Bonus App.exe --auto-run"""; Flags: uninsdeletevalue; Tasks: startup

@@ -60,7 +60,7 @@ def create_virtual_camera():
         'AkVCamAssistant -i'  # It's very important.
         'AkVCamManager remove-devices',
         'AkVCamManager update',
-        'AkVCamManager add-device -i "AkVCamVideoDevice0" "Virtual Camera"',
+        'AkVCamManager add-device -i "AkVCamVideoDevice0" "Meetn Virtual Camera"',
         'AkVCamManager add-format AkVCamVideoDevice0 RGB24 640 480 30',
         'AkVCamManager update',
         'AkVCamManager set-picture ' + abs_path,
@@ -92,12 +92,12 @@ def set_all_env():
     if not is_admin():
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
 
-    set_system_path()
+    # set_system_path()
     # print("PATH environment variable updated successfully.")
     create_virtual_camera()
     print('Virtual Camera created!!!')
 
 
 if __name__ == "__main__":
-    # set_all_env()
-    create_virtual_camera()
+    set_all_env()
+    # create_virtual_camera()
