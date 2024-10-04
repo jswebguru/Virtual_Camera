@@ -45,7 +45,8 @@ class VirtualCameraApp(QMainWindow):
         self.offset = QPoint()
         self.background_image = None
         # Start the AkVCamManager process
-        self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=CREATION_FLAGS)
+        self.akv_cam_proc = None
+        # self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_CONSOLE)
         self.setStyleSheet(f"""  
             QLabel, QPushButton {{  
                 color: white;  
@@ -285,7 +286,6 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.installEventFilter(self)
         self.resize(1000, 600)  # Set the window size
         self.center()  # Center the window on the screen
-
     def center(self):
         # Get the screen size
         screen = QApplication.primaryScreen()
@@ -372,10 +372,17 @@ class VirtualCameraApp(QMainWindow):
             self.showMaximized()
 
     def start_camera(self, source=0):
-        self.cap = cv2.VideoCapture(source)
+        if isinstance(source, str):
+            self.cap = cv2.VideoCapture(source)
+        else:
+
+            self.cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+
         if not self.cap.isOpened():
             self.camera_label.setText("Failed to open the camera.")
             return
+        if self.akv_cam_proc is None:
+            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
         self.timer.start(30)
 
@@ -406,10 +413,14 @@ class VirtualCameraApp(QMainWindow):
         self.timer.stop()
 
     def select_camera_source(self, index):
+        # self.akv_cam_proc.terminate()
+        # self.akv_cam_proc.wait()
+
         self.stop_camera()
         if index == len(self.cameras):
             index = 'videos/output.mp4'
         self.start_camera(index)
+
 
     def switch_bg_selection(self, mode):
         if mode == "included":
