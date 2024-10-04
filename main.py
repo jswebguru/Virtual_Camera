@@ -14,8 +14,8 @@ from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
 from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
-from virtual_cam import feed_frame_to_vir_cam
-from virtual_cam import get_device_format
+from virtual_cam import feed_frame_to_vir_cam, resize_and_pad
+
 CREATION_FLAGS = 0
 if sys.platform == "win32":
     CREATION_FLAGS = subprocess.CREATE_NO_WINDOW
@@ -62,7 +62,8 @@ class VirtualCameraApp(QMainWindow):
         self.offset = QPoint()
         self.background_image = None
         # Start the AkVCamManager process
-        self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=CREATION_FLAGS)
+        self.akv_cam_proc = None
+        # self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_CONSOLE)
         self.setStyleSheet(f"""  
             QLabel, QPushButton {{  
                 color: white;  
@@ -328,7 +329,6 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.installEventFilter(self)
         self.resize(1000, 600)  # Set the window size
         self.center()  # Center the window on the screen
-
     def center(self):
         # Get the screen size
         screen = QApplication.primaryScreen()
@@ -419,10 +419,17 @@ class VirtualCameraApp(QMainWindow):
             self.showMaximized()
 
     def start_camera(self, source=0):
-        self.cap = cv2.VideoCapture(source)
+        if isinstance(source, str):
+            self.cap = cv2.VideoCapture(source)
+        else:
+
+            self.cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+
         if not self.cap.isOpened():
             self.camera_label.setText("Failed to open the camera.")
             return
+        if self.akv_cam_proc is None:
+            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
 
         self.timer.start(30)
 
@@ -431,42 +438,21 @@ class VirtualCameraApp(QMainWindow):
         if not ret:
             self.camera_label.setText("Failed to capture image.")
             return
-        original_height, original_width = frame.shape[:2]
-        new_width = 640
-        new_height = int(new_width * original_height / original_width)
-        frame = cv2.resize(frame, (new_width, new_height))
+
         frame = background_change(self.background_image, frame, self.blur_switch.switch.isChecked(),
                                   self.green_screen_switch.switch.isChecked(), input_session=self.session)
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = resize_and_pad(frame)
         height, width, channel = frame.shape
         step = channel * width
-        if self.cur_vcam_width == width and self.cur_vcam_height == height:
-            pass
-        else:
-            print(width, height)
-            self.akv_cam_proc.stdin.close()
-            self.akv_cam_proc.wait()
-            AKV_CAM_COMMAND = [
-                'AkVCamManager',
-                'stream',
-                '--fps', '30',
-                'AkVCamVideoDevice0',
-                'RGB24',
-                str(width), str(height)
-            ]
-            self.cur_vcam_width = width
-            self.cur_vcam_height = height
-            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=CREATION_FLAGS)
         try:
-            print('initial: ', frame.shape)
-
             feed_frame_to_vir_cam(self.akv_cam_proc, frame)
 
         except Exception as e:
             print(f"An error occurred1: {e}")
 
-        q_img = QImage(frame.data, width, height, step, QImage.Format_BGR888)
+        q_img = QImage(frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
 
     def stop_camera(self):
@@ -544,7 +530,6 @@ def loop(splash, movie):
 
         movie.jumpToNextFrame()
         current_pixmap = movie.currentPixmap().scaled(1000, 600)
-
 
         if not current_pixmap.isNull():
             splash.setPixmap(current_pixmap)
