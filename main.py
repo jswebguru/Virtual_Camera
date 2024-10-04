@@ -66,7 +66,6 @@ class VirtualCameraApp(QMainWindow):
         self.background_image = None
         # Start the AkVCamManager process
         self.akv_cam_proc = None
-        # self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_CONSOLE)
         self.setStyleSheet(f"""  
             QLabel, QPushButton {{  
                 color: white;  
@@ -149,6 +148,21 @@ class VirtualCameraApp(QMainWindow):
                 border-radius: 5px;
                 icon: url({self.pre_path}res/hover/close.png);  
             }}  
+            QPushButton#FolderOpen {{ 
+                border: 2px;  
+                icon: url({self.pre_path}res/open-folder.png);  
+                icon-size: 30px; 
+                height: 40px;      
+                border-radius: 5px;       
+                background-color: gray;  
+            }} 
+            QPushButton#FolderOpen:hover {{  
+                border: 2px;  
+                icon-size: 30px;  
+                height: 40px;
+                border-radius: 5px;
+                icon: url({self.pre_path}res/hover/open-folder.png);  
+            }} 
 
         """)
 
@@ -312,9 +326,19 @@ class VirtualCameraApp(QMainWindow):
         self.bg_image_list.setSpacing(5)
         self.bg_image_list.setDragEnabled(False)
 
+        # Button to open directory - initially hidden
+        self.select_directory_button = QPushButton("Select Directory")
+        self.select_directory_button.setObjectName("FolderOpen")
+        self.select_directory_button.setVisible(False)
+        self.select_directory_button.clicked.connect(self.select_local_bg_folder)
+        right_panel_layout.addWidget(self.select_directory_button)
+
+        # right_panel_layout.addWidget(self.bg_image_list)
+
         self.selected_bg_path = None
 
-        self.update_image_list(self.pre_path + 'images/Abstract')
+        self._pool = concurrent.futures.ThreadPoolExecutor()
+        self._pool.submit(self.update_image_list, self.pre_path + 'images/Abstract')
         self.bg_image_list.itemClicked.connect(self.set_background_image)
         right_panel_layout.addWidget(self.bg_image_list)
 
@@ -334,7 +358,6 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.installEventFilter(self)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
-        self._pool = concurrent.futures.ThreadPoolExecutor()
 
     def center(self):
         # Get the screen size
@@ -371,7 +394,8 @@ class VirtualCameraApp(QMainWindow):
         self.bg_image_list.clear()
         self.bg_image_list.scrollToTop()
         images = list_files_in_directory(path)
-        images.insert(0, self.pre_path + 'res/none.png')
+        if images[0] != self.pre_path + 'res/none.png':
+            images.insert(0, self.pre_path + 'res/none.png')
 
         for image in images:
             item = QListWidgetItem(QIcon(image), "")
@@ -482,11 +506,15 @@ class VirtualCameraApp(QMainWindow):
         if mode == "included":
             self.bg_included_button.setChecked(True)
             self.bg_local_button.setChecked(False)
+            self.folder_dropdown.setVisible(True)
+            self.select_directory_button.setVisible(False)
             self.update_folder_list('images')
-            self.update_image_list('images/Abstract')
+            # self.update_image_list('images/Abstract')
         else:
             self.bg_included_button.setChecked(False)
             self.bg_local_button.setChecked(True)
+            self.folder_dropdown.setVisible(False)
+            self.select_directory_button.setVisible(True)
             self.select_local_bg_folder()
 
     def select_local_bg_folder(self):
@@ -495,8 +523,8 @@ class VirtualCameraApp(QMainWindow):
         if dialog.exec():
             folder_path = dialog.selectedFiles()[0]
             if folder_path:
-                self.update_folder_list(folder_path)
-                self.update_image_list(folder_path)
+                # self.update_folder_list(folder_path)
+                self._pool.submit(self.update_image_list, folder_path)
 
     def folder_selection_changed(self, index):
         folder_name = self.folder_dropdown.itemText(index)
