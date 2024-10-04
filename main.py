@@ -327,8 +327,9 @@ class VirtualCameraApp(QMainWindow):
 
         self.cam_dropdown.installEventFilter(self)
         self.folder_dropdown.installEventFilter(self)
-        self.resize(1000, 600)  # Set the window size
+        self.resize(1050, 600)  # Set the window size
         self.center()  # Center the window on the screen
+
     def center(self):
         # Get the screen size
         screen = QApplication.primaryScreen()
@@ -529,7 +530,7 @@ def loop(splash, movie):
             break
 
         movie.jumpToNextFrame()
-        current_pixmap = movie.currentPixmap().scaled(1000, 600)
+        current_pixmap = movie.currentPixmap().scaled(1050, 600)
 
         if not current_pixmap.isNull():
             splash.setPixmap(current_pixmap)
@@ -549,7 +550,7 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] != '--auto-run':
         movie = QMovie(pre_path + 'res/loading.gif')
         movie.start()
-        splash = QSplashScreen(movie.currentPixmap().scaled(1000, 600))
+        splash = QSplashScreen(movie.currentPixmap().scaled(1050, 600))
         thread = threading.Thread(target=loop, args=(splash, movie))
         splash.show()
         thread.start()
