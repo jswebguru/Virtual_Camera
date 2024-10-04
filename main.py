@@ -15,6 +15,8 @@ from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
 from virtual_cam import feed_frame_to_vir_cam, resize_and_pad
+import concurrent.futures
+
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -332,6 +334,7 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.installEventFilter(self)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
+        self._pool = concurrent.futures.ThreadPoolExecutor()
 
     def center(self):
         # Get the screen size
@@ -499,7 +502,8 @@ class VirtualCameraApp(QMainWindow):
         folder_name = self.folder_dropdown.itemText(index)
         if folder_name:
             selected_folder = folder_name
-            self.update_image_list(selected_folder)
+            self._pool.submit(self.update_image_list, selected_folder)
+            # self.update_image_list(selected_folder)
 
     def startup_register(self):
         """Handle the toggle event for blur background."""
