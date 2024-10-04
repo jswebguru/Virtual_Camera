@@ -14,7 +14,7 @@ from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
 from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
-from virtual_cam import feed_frame_to_vir_cam
+from virtual_cam import feed_frame_to_vir_cam, resize_and_pad
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -382,7 +382,7 @@ class VirtualCameraApp(QMainWindow):
             self.camera_label.setText("Failed to open the camera.")
             return
         if self.akv_cam_proc is None:
-            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
 
         self.timer.start(30)
 
@@ -391,11 +391,12 @@ class VirtualCameraApp(QMainWindow):
         if not ret:
             self.camera_label.setText("Failed to capture image.")
             return
-        frame = cv2.resize(frame, (600, 400))
+
         frame = background_change(self.background_image, frame, self.blur_switch.switch.isChecked(),
                                   self.green_screen_switch.switch.isChecked(), input_session=self.session)
 
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = resize_and_pad(frame)
         height, width, channel = frame.shape
         step = channel * width
         try:
@@ -404,7 +405,7 @@ class VirtualCameraApp(QMainWindow):
         except Exception as e:
             print(f"An error occurred1: {e}")
 
-        q_img = QImage(frame.data, width, height, step, QImage.Format_BGR888)
+        q_img = QImage(frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
 
     def stop_camera(self):

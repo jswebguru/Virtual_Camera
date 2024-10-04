@@ -8,8 +8,7 @@ def resize_and_pad(frame, target_width=640, target_height=480):
     # Get current dimensions
     if frame.shape[2] == 4:  # In case it's RGBA
         frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
-    else:
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
 
     original_height, original_width = frame.shape[:2]
 
@@ -35,22 +34,18 @@ def resize_and_pad(frame, target_width=640, target_height=480):
 
     # Place the resized RGBA frame onto the center of the padded frame
     frame_padded[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = frame_rgba
+    frame = cv2.cvtColor(frame_padded, cv2.COLOR_RGBA2RGB)
 
-    return frame_padded
+    return frame
 
 
 def feed_frame_to_vir_cam(proc, frame):
     try:
 
         # Resize the frame to 640x480 if it's not already that size
-        frame_rgba = resize_and_pad(frame)
-        # Convert the frame to RGB24
-        frame = cv2.cvtColor(frame_rgba, cv2.COLOR_RGBA2RGB)
 
-
-            # Write frame data as bytes to the AkVCamManager stdin
         proc.stdin.write(frame.tobytes())
-        proc.stdin.flush()
+        # proc.stdin.flush()
         # proc.communicate(frame.tobytes())
     except Exception as exx:
         print(f"An error occurred : {exx}")
