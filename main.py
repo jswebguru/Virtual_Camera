@@ -29,7 +29,8 @@ AKV_CAM_COMMAND = [
     '640', '480'
 ]
 CONTROL_BUTTON_SIZE = 23
-
+WINDOW_WIDTH = 1025
+WINDOW_HEIGHT = 600
 
 class VirtualCameraApp(QMainWindow):
     def __init__(self):
@@ -327,7 +328,7 @@ class VirtualCameraApp(QMainWindow):
 
         self.cam_dropdown.installEventFilter(self)
         self.folder_dropdown.installEventFilter(self)
-        self.resize(1050, 600)  # Set the window size
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
 
     def center(self):
@@ -365,6 +366,8 @@ class VirtualCameraApp(QMainWindow):
         self.bg_image_list.clear()
         self.bg_image_list.scrollToTop()
         images = list_files_in_directory(path)
+        images.insert(0, self.pre_path + 'res/none.png')
+
         for image in images:
             item = QListWidgetItem(QIcon(image), "")
             item.setData(Qt.UserRole, image)
@@ -379,7 +382,10 @@ class VirtualCameraApp(QMainWindow):
         if item.data(Qt.UserRole):
             self.selected_bg_path = item.data(Qt.UserRole)
             try:
-                self.background_image = cv2.imread(self.selected_bg_path)
+                if self.bg_image_list.row(item) == 0:
+                    self.background_image = None
+                else:
+                    self.background_image = cv2.imread(self.selected_bg_path)
 
                 # Highlight the selected item with a border
                 item.setBackground(Qt.blue)  # Set the background color for selected
@@ -530,7 +536,7 @@ def loop(splash, movie):
             break
 
         movie.jumpToNextFrame()
-        current_pixmap = movie.currentPixmap().scaled(1050, 600)
+        current_pixmap = movie.currentPixmap().scaled(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         if not current_pixmap.isNull():
             splash.setPixmap(current_pixmap)
@@ -550,7 +556,7 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] != '--auto-run':
         movie = QMovie(pre_path + 'res/loading.gif')
         movie.start()
-        splash = QSplashScreen(movie.currentPixmap().scaled(1050, 600))
+        splash = QSplashScreen(movie.currentPixmap().scaled(WINDOW_WIDTH, WINDOW_HEIGHT))
         thread = threading.Thread(target=loop, args=(splash, movie))
         splash.show()
         thread.start()
