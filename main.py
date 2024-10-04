@@ -308,6 +308,8 @@ class VirtualCameraApp(QMainWindow):
 
         self.bg_image_list.setItemDelegate(RoundedItemDelegate())
         self.bg_image_list.setSpacing(5)
+        self.bg_image_list.setDragEnabled(False)
+
         self.selected_bg_path = None
 
         self.update_image_list(self.pre_path + 'images/Abstract')
