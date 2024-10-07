@@ -5,9 +5,7 @@ import threading
 import time
 import cv2
 import numpy as np
-from rembg import remove
-
-from background_removal import background_change, new_session
+from background_removal import background_change, new_session, remove
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
                                QWidget, QFileDialog, QPushButton, QSplashScreen, QSystemTrayIcon, QMenu)

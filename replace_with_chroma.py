@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from rembg import remove
 
 
 def find_dominant_colors(image, k=3):
@@ -48,18 +47,18 @@ if __name__ == "__main__":
     input_image = cv2.imread(input_path)
     input_image_rgb = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
-    # Create the initial mask
-    initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
-
-    # Extract original background using the initial mask
-    original_background = input_image * (1 - initial_mask[:, :, np.newaxis])
-
-    # Find the most dominant color assuming it's the background chromakey
-    chromakey_color = find_dominant_colors(original_background)
-    # Refine the mask using the chroma key
-    refined_mask = create_mask(input_image_rgb, chromakey_color, 30)
-    cv2.imwrite('refined_mask.jpg', refined_mask * 255)
-    # Apply the refined mask
-    separated_foreground = input_image * refined_mask[:, :, np.newaxis]
-    # Save/Display the result
-    cv2.imwrite('refined_foreground.png', separated_foreground)
+    # # Create the initial mask
+    # initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
+    #
+    # # Extract original background using the initial mask
+    # original_background = input_image * (1 - initial_mask[:, :, np.newaxis])
+    #
+    # # Find the most dominant color assuming it's the background chromakey
+    # chromakey_color = find_dominant_colors(original_background)
+    # # Refine the mask using the chroma key
+    # refined_mask = create_mask(input_image_rgb, chromakey_color, 30)
+    # cv2.imwrite('refined_mask.jpg', refined_mask * 255)
+    # # Apply the refined mask
+    # separated_foreground = input_image * refined_mask[:, :, np.newaxis]
+    # # Save/Display the result
+    # cv2.imwrite('refined_foreground.png', separated_foreground)
