@@ -460,7 +460,7 @@ class VirtualCameraApp(QMainWindow):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.offset = QPoint(event.position().x(), event.position().y())
+            self.offset = QPoint(int(event.position().x()), int(event.position().y()))
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
@@ -592,25 +592,25 @@ class VirtualCameraApp(QMainWindow):
 done = False
 
 
-def loop(splash, movie):
+def loop(input_splash, input_movie):
     global done
 
     # Create a loop to update the splash screen with each frame
     while not done:
         time.sleep(0.01)  # Adjust timing as needed to control speed
-        if not movie.isValid():
+        if not input_movie.isValid():
             print("Invalid GIF")
             break
 
-        movie.jumpToNextFrame()
-        current_pixmap = movie.currentPixmap().scaled(WINDOW_WIDTH, WINDOW_HEIGHT)
+        input_movie.jumpToNextFrame()
+        current_pixmap = input_movie.currentPixmap().scaled(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         if not current_pixmap.isNull():
-            splash.setPixmap(current_pixmap)
+            input_splash.setPixmap(current_pixmap)
 
         # Process events and introduce a small delay
         QApplication.processEvents()
-    movie.stop()
+    input_movie.stop()
 
 
 if __name__ == "__main__":
