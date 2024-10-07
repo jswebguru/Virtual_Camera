@@ -36,4 +36,4 @@ pyinstaller --name "Meetn Bonus App" --icon='res/MBA.ico' --onedir --noconfirm -
 
 Installation file
 
-Refer to 'res/MBA.iss' file. It is Inno setup script.
+Refer to 'Inno_Setup/MBA.iss' file. It is Inno setup script.

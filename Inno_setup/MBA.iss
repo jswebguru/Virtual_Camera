@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Meetn Bonus App"
-#define MyAppVersion "1.0"
+#define MyAppVersion "1.1"
 #define MyAppPublisher "Rick Raddatz, Meetn"
 #define MyAppURL "https://www.meetn.com/"
 #define MyAppExeName "Meetn Bonus App.exe"
@@ -40,7 +40,7 @@ InfoAfterFile=after.txt
 PrivilegesRequired=admin  
 OutputDir=G:\must
 OutputBaseFilename=Meetn Bonus App
-SetupIconFile=G:\Projects\CALL\Virtual_camera\MBA.ico
+SetupIconFile=G:\Projects\CALL\Virtual_camera\res\MBA.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -71,8 +71,7 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; Value
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes"; ValueType: string; ValueName: ".myp"; ValueData: ""
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Meetn Bonus App"; ValueData: """{app}\Meetn Bonus App.exe --auto-run"""; Flags: uninsdeletevalue; Tasks: startup
-
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Meetn Bonus App"; ValueData: "{app}\Meetn Bonus App.exe --auto-run"; Flags: uninsdeletevalue;
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
