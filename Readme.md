@@ -32,7 +32,7 @@ Driver
 pyinstaller --icon="res/MBA.ico" --windowed --name "MeetnDriver" --onefile set_env.py
 
 App
-pyinstaller --name "Meetn Bonus App" --icon='res/MBA.ico' --onedir --noconfirm --windowed main.py
+pyinstaller --name "Meetn Bonus App" --icon='res/MBA.ico' --onedir --noconfirm --windowed App.py
 
 Installation file
 
