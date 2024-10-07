@@ -55,4 +55,3 @@ if __name__ == "__main__":
         window = VirtualCameraApp()
         window.minimize_to_tray()
     sys.exit(app.exec())
-
