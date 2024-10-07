@@ -58,8 +58,6 @@ def create_virtual_camera():
     abs_path = os.path.abspath('images/default_picture.jpg')
     commands = [
         'AkVCamAssistant -i'  # It's very important.
-        'AkVCamManager remove-devices',
-        'AkVCamManager update',
         'AkVCamManager add-device -i "AkVCamVideoDevice0" "Meetn Virtual Camera"',
         'AkVCamManager add-format AkVCamVideoDevice0 RGB24 640 480 30',
         'AkVCamManager update',

@@ -61,10 +61,6 @@ Source: "G:\Projects\CALL\Virtual_camera\dist\Meetn Bonus App\*"; DestDir: "{app
 Source: "itdownload.dll"; Flags: dontcopy  
 
 [Registry]
-; Add ffmpeg path to environment variable  
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
-    ValueType: expandsz; ValueName: "Path"; ValueData: "{userpf}\MBA\Dependency\ffmpeg\bin;{olddata}"; Flags: preservestringtype;  \
-    Check: NeedsAddPath('{userpf}\MBA\Dependency\ffmpeg\bin')
 ; Add AkVCamManager path based on system architecture
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
     ValueType: expandsz; ValueName: "Path"; ValueData: "{userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch};{olddata}"; Flags: preservestringtype;  \
@@ -85,7 +81,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 ; Install AkVCamassistant to make the virtual camera working
 Filename: "{userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamAssistant.exe"; Parameters: "-i"; Flags: runhidden runascurrentuser; statusMsg: "Installing assistant program..."
 ; Run AkVCamManager to remove devices after installation is complete
-Filename: "{cmd}"; Parameters: "/C {userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamManager remove-devices"; Flags: runhidden runascurrentuser; StatusMsg: "Removing cameras..."
+;Filename: "{cmd}"; Parameters: "/C {userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamManager remove-devices"; Flags: runhidden runascurrentuser; StatusMsg: "Removing cameras..."
 ; Update the AkVCamManager
 Filename: "{cmd}"; Parameters: "/C {app}\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamManager update"; Flags: runhidden runascurrentuser; StatusMsg: "Updating devices..."
 ; Add a Virtual Camera device

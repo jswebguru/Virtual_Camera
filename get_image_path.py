@@ -16,13 +16,12 @@ def list_files_in_directory(directory, folders_only=False):
         if len(file_paths) == 0:
             file_paths.append(directory)
         return file_paths
-
+    image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp', '.heic'}
     for root, _, all_files in os.walk(directory):
         for i, each in enumerate(all_files):
             file_path = os.path.join(root, each)
-            file_paths.append(file_path)
-            # if i > 10:
-            #     return file_paths
+            if os.path.isfile(file_path) and os.path.splitext(each)[1].lower() in image_extensions:
+                file_paths.append(file_path)
     return file_paths
 
 

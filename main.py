@@ -4,6 +4,9 @@ import sys
 import threading
 import time
 import cv2
+import numpy as np
+from rembg import remove
+
 from background_removal import background_change, new_session
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
@@ -13,10 +16,10 @@ from PySide6.QtCore import QTimer, Qt, QPoint, QRectF, Slot, QEvent
 from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
 from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
+from replace_with_chroma import find_dominant_colors
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
-from virtual_cam import feed_frame_to_vir_cam, resize_and_pad
+from virtual_cam import feed_frame_to_vir_cam, resize, pad
 import concurrent.futures
-
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -34,9 +37,12 @@ CONTROL_BUTTON_SIZE = 23
 WINDOW_WIDTH = 1025
 WINDOW_HEIGHT = 600
 
+
 class VirtualCameraApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.cur_frame = None
+        self.chromakey = None
         if os.path.exists('images'):
             self.pre_path = ''
         else:
@@ -220,6 +226,8 @@ class VirtualCameraApp(QMainWindow):
         self.camera_label = QLabel(self)
         self.camera_label.setStyleSheet("border: 1px solid white;")
         self.camera_label.setAlignment(Qt.AlignCenter)
+        self.camera_label.setFixedHeight(480)
+        self.camera_label.setFixedWidth(640)
         left_panel_layout.addWidget(self.camera_label)
 
         self.timer = QTimer()
@@ -229,6 +237,7 @@ class VirtualCameraApp(QMainWindow):
         features_layout = QVBoxLayout()
 
         self.green_screen_switch = LabeledToggleSwitch("I have a green or blue screen", self)
+        self.green_screen_switch.switch.stateChanged.connect(self.green_switch_changed)
         features_layout.addWidget(self.green_screen_switch)
 
         self.blur_switch = LabeledToggleSwitch("Blur Background", self)
@@ -359,6 +368,26 @@ class VirtualCameraApp(QMainWindow):
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
 
+    def determine_chromakey(self):
+        if self.cur_frame is None:
+            print('Current frame is not selected.')
+            return
+        # Convert from RGB to BGR (since OpenCV uses BGR)
+        input_image = cv2.cvtColor(self.cur_frame, cv2.COLOR_RGB2BGR)
+        # input_image = self.cur_frame
+        initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
+        #
+        original_background = input_image * (1 - initial_mask[:, :, np.newaxis])
+
+        # Find the most dominant color assuming it's the background chromakey
+        self.chromakey = find_dominant_colors(original_background)
+
+    def green_switch_changed(self):
+        if self.green_screen_switch.switch.isChecked():
+            self._pool.submit(self.determine_chromakey)
+        else:
+            self.chromakey = None
+
     def center(self):
         # Get the screen size
         screen = QApplication.primaryScreen()
@@ -465,30 +494,34 @@ class VirtualCameraApp(QMainWindow):
             self.camera_label.setText("Failed to open the camera.")
             return
         if self.akv_cam_proc is None:
-            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
-
+            self.akv_cam_proc = subprocess.Popen(AKV_CAM_COMMAND, stdin=subprocess.PIPE,
+                                                 creationflags=subprocess.CREATE_NO_WINDOW)
+        ret, cur_frame = self.cap.read()
+        if self.green_screen_switch.switch.isChecked() and ret:
+            self.cur_frame = cur_frame
+            self.green_switch_changed()
         self.timer.start(30)
 
     def update_camera_feed(self):
-        ret, frame = self.cap.read()
+        ret, cur_frame = self.cap.read()
         if not ret:
             self.camera_label.setText("Failed to capture image.")
             return
-
-        frame = background_change(self.background_image, frame, self.blur_switch.switch.isChecked(),
-                                  self.green_screen_switch.switch.isChecked(), input_session=self.session)
-
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = resize_and_pad(frame)
-        height, width, channel = frame.shape
+        self.cur_frame = cur_frame
+        cur_frame, new_height = resize(cur_frame)
+        cool_frame = background_change(self.background_image, cur_frame, self.blur_switch.switch.isChecked(),
+                                       self.chromakey, input_session=self.session)
+        cool_frame = pad(cool_frame, new_height)
+        height, width, channel = cool_frame.shape
+        cool_frame = cv2.cvtColor(cool_frame, cv2.COLOR_RGB2BGR)
         step = channel * width
         try:
-            feed_frame_to_vir_cam(self.akv_cam_proc, frame)
+            feed_frame_to_vir_cam(self.akv_cam_proc, cool_frame)
 
         except Exception as e:
             print(f"An error occurred1: {e}")
 
-        q_img = QImage(frame.data, width, height, step, QImage.Format_RGB888)
+        q_img = QImage(cool_frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
 
     def stop_camera(self):
@@ -499,7 +532,7 @@ class VirtualCameraApp(QMainWindow):
     def select_camera_source(self, index):
         self.stop_camera()
         if index == len(self.cameras):
-            index = 'videos/output.mp4'
+            index = 'videos/output1.mp4'
         self.start_camera(index)
 
     def switch_bg_selection(self, mode):
@@ -509,7 +542,6 @@ class VirtualCameraApp(QMainWindow):
             self.folder_dropdown.setVisible(True)
             self.select_directory_button.setVisible(False)
             self.update_folder_list('images')
-            # self.update_image_list('images/Abstract')
         else:
             self.bg_included_button.setChecked(False)
             self.bg_local_button.setChecked(True)
@@ -523,7 +555,7 @@ class VirtualCameraApp(QMainWindow):
         if dialog.exec():
             folder_path = dialog.selectedFiles()[0]
             if folder_path:
-                # self.update_folder_list(folder_path)
+                self.background_image = None
                 self._pool.submit(self.update_image_list, folder_path)
 
     def folder_selection_changed(self, index):
@@ -557,7 +589,10 @@ class VirtualCameraApp(QMainWindow):
 
     def exit_application(self):
         self.close()
+
+
 done = False
+
 
 def loop(splash, movie):
     global done
