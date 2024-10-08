@@ -77,10 +77,13 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+
 ; Install AkVCamassistant to make the virtual camera working
 Filename: "{userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamAssistant.exe"; Parameters: "-i"; Flags: runhidden runascurrentuser; statusMsg: "Installing assistant program..."
 ; Run AkVCamManager to remove devices after installation is complete
 ;Filename: "{cmd}"; Parameters: "/C {userpf}\MBA\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamManager remove-devices"; Flags: runhidden runascurrentuser; StatusMsg: "Removing cameras..."
+; If AkVCamaassistant already exists then start this service
+Filename: "{cmd}"; Parameters: "/C net start AkVCamAssistant"; Flags: runhidden runascurrentuser; StatusMsg: "Starting AkVCamassistant service..."  
 ; Update the AkVCamManager
 Filename: "{cmd}"; Parameters: "/C {app}\Dependency\AkVirtualCamera\{code:GetArch}\AkVCamManager update"; Flags: runhidden runascurrentuser; StatusMsg: "Updating devices..."
 ; Add a Virtual Camera device
@@ -143,4 +146,6 @@ begin
     end;  
   end;  
 end; 
+
+
 

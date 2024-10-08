@@ -528,7 +528,7 @@ class VirtualCameraApp(QMainWindow):
     def select_camera_source(self, index):
         self.stop_camera()
         if index == len(self.cameras):
-            index = 'videos/output1.mp4'
+            index = self.pre_path + 'videos/output1.mp4'
         self.start_camera(index)
 
     def switch_bg_selection(self, mode):

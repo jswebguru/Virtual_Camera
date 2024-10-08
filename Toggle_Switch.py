@@ -72,13 +72,31 @@ class LabeledToggleSwitch(QWidget):
         super().__init__(parent)
         layout = QHBoxLayout(self)
         self.switch = ToggleSwitch(self)
-        self.label = QLabel(label, self)
+
+        # Use ClickableLabel instead of QLabel
+        self.label = ClickableLabel(label, self)
         self.label.setStyleSheet("color: white; font-size: 14px;")
+
+        # Connect the label's clicked signal to toggle the switch
+        self.label.clicked.connect(self.toggleSwitch)
+
         layout.addWidget(self.switch)
         layout.addWidget(self.label)
         layout.addStretch()
         layout.setContentsMargins(0, 0, 0, 0)
 
+    def toggleSwitch(self):
+        self.switch.setChecked(not self.switch.isChecked())
+
+class ClickableLabel(QLabel):
+    clicked = Signal()
+
+    def __init__(self, text='', parent=None):
+        super().__init__(text, parent)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
 
 class RoundedItemDelegate(QStyledItemDelegate):
     def __init__(self, radius=10, parent=None):
