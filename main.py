@@ -369,8 +369,6 @@ class VirtualCameraApp(QMainWindow):
             return
         # Convert from RGB to BGR (since OpenCV uses BGR)
         input_image = cv2.cvtColor(self.cur_frame, cv2.COLOR_RGB2BGR)
-        # input_image = self.cur_frame
-        # initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
         initial_mask = self.model.run(input_image, input_image, only_mask=True)
         original_background = input_image * (1 - initial_mask[:, :, np.newaxis])
 

@@ -54,11 +54,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ;Name: "RestartPC"; Description: "Restart the Computer"; GroupDescription: "Post Installation Options"; Flags: checkedonce;
 
 [Files]
-Source: "C:\Users\Kanoi\.u2net\u2netp.onnx"; DestDir: "C:\Users\{username}\.u2net"; Flags: ignoreversion
 Source: "G:\Projects\CALL\HEY\*"; DestDir: "{userpf}\MBA"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "G:\Projects\CALL\Virtual_camera\dist\Meetn Bonus App\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; NOTE: Don't use "Flags: ignoreversion" on any shared system files  
-Source: "itdownload.dll"; Flags: dontcopy  
+; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
 ; Add AkVCamManager path based on system architecture
