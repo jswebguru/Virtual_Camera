@@ -3,7 +3,7 @@ import subprocess
 import sys
 import cv2
 import numpy as np
-from background_removal import background_change, new_session, remove
+from background_removal import background_change
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
                                QWidget, QFileDialog, QPushButton, QSystemTrayIcon, QMenu)
@@ -14,8 +14,11 @@ from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from replace_with_chroma import find_dominant_colors
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
-from virtual_cam import feed_frame_to_vir_cam, resize, pad
+from virtual_cam import feed_frame_to_vir_cam, resize
 import concurrent.futures
+import argparse
+from ai_engine import Predictor
+
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -253,11 +256,7 @@ class VirtualCameraApp(QMainWindow):
         right_panel_layout = QVBoxLayout()
         right_panel_layout.setContentsMargins(5, 5, 5, 5)
         right_panel_layout.setSpacing(10)
-        try:
-            self.session = new_session('u2netp')
-        except Exception as e:
-            print(e, ' has occurred! And running on the CPU')
-            self.session = new_session('u2netp', ['CPUExecutionProvider'])
+        self.model = Predictor(self.parse_args())
         self.bg_label = QLabel("Select a virtual background:")
         self.bg_label.setObjectName("SectionTitle")
         right_panel_layout.addWidget(self.bg_label)
@@ -371,8 +370,8 @@ class VirtualCameraApp(QMainWindow):
         # Convert from RGB to BGR (since OpenCV uses BGR)
         input_image = cv2.cvtColor(self.cur_frame, cv2.COLOR_RGB2BGR)
         # input_image = self.cur_frame
-        initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
-        #
+        # initial_mask = remove(input_image, only_mask=True).astype(float) / 255.0
+        initial_mask = self.model.run(input_image, input_image, only_mask=True)
         original_background = input_image * (1 - initial_mask[:, :, np.newaxis])
 
         # Find the most dominant color assuming it's the background chromakey
@@ -504,10 +503,9 @@ class VirtualCameraApp(QMainWindow):
             self.camera_label.setText("Failed to capture image.")
             return
         self.cur_frame = cur_frame
-        cur_frame, new_height = resize(cur_frame)
+        cur_frame = resize(cur_frame)
         cool_frame = background_change(self.background_image, cur_frame, self.blur_switch.switch.isChecked(),
-                                       self.chromakey, input_session=self.session)
-        cool_frame = pad(cool_frame, new_height)
+                                       self.chromakey, input_session=self.model)
         height, width, channel = cool_frame.shape
         cool_frame = cv2.cvtColor(cool_frame, cv2.COLOR_RGB2BGR)
         step = channel * width
@@ -519,6 +517,20 @@ class VirtualCameraApp(QMainWindow):
 
         q_img = QImage(cool_frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
+
+    def parse_args(self):
+        parser = argparse.ArgumentParser(
+            description='PP-HumanSeg inference for video')
+        parser.add_argument(
+            "--config",
+            help="The config file of the inference model.",
+            type=str,
+            default=self.pre_path + 'res/model/deploy.yaml')
+
+        parser.add_argument(
+            '--use_post_process', help='Use post process.', action='store_true')
+
+        return parser.parse_args()
 
     def stop_camera(self):
         if self.cap:

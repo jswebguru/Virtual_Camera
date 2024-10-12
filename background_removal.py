@@ -1,8 +1,6 @@
 import logging
-from rembg import remove, new_session
 import cv2
 import numpy as np
-import time
 from replace_with_chroma import create_mask
 
 
@@ -14,24 +12,12 @@ def background_change(new_background_image, source_image, blur_checked, chromake
     if chromakey is not None:
         mask = create_mask(source_image, chromakey, 30)
         alpha_mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
-        foreground = source_image * mask[:, :, np.newaxis]
-
     else:
-        start = time.time()
-        if input_session is not None:
-            foreground = remove(source_image, session=input_session)
-        else:
-            foreground = remove(source_image)
-        # foreground with alpha channel
-        eta_time = time.time() - start
-        logging.info(f'ETA time for changing the background is {eta_time}.')
-        # Ensure the new background is the same size as the foreground
-        if foreground.shape[2] == 3:
-            foreground = cv2.cvtColor(foreground, cv2.COLOR_BGR2BGRA)
-
-        # Prepare masks for blending
-        alpha_channel = foreground[:, :, 3] / 255.0  # Normalized alpha channel
-        alpha_mask = np.repeat(alpha_channel[:, :, np.newaxis], 3, axis=2)
+        try:
+            alpha_channel = input_session.run(source_image, new_background_image, only_mask=True)
+            alpha_mask = np.repeat(alpha_channel[:, :, np.newaxis], 3, axis=2)
+        except Exception as e:
+            logging.info(f"Error Occurred: {e}")
 
     if new_background_image is None:
         new_background_image = cv2.resize(source_image, (width, height))
@@ -42,8 +28,7 @@ def background_change(new_background_image, source_image, blur_checked, chromake
         new_background_image = cv2.GaussianBlur(new_background_image, (21, 21), 0)
 
     # Split channels
-    foreground_rgb = foreground[:, :, :3]
-
+    foreground_rgb = source_image
     # Blend the images
     combined = (foreground_rgb * alpha_mask + new_background_image * (1 - alpha_mask)).astype(np.uint8)
 
@@ -53,7 +38,6 @@ def background_change(new_background_image, source_image, blur_checked, chromake
 if __name__ == '__main__':
     input_path = 'images/image1.jpg'
     background_path = 'images/image2.jpg'
-    unet2p_session = new_session('unet2p')
 
     # Load images
     front_image = cv2.imread(input_path)

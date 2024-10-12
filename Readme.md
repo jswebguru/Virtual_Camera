@@ -34,6 +34,12 @@ pyinstaller --icon="res/MBA.ico" --windowed --name "MeetnDriver" --onefile set_e
 App
 pyinstaller --name "Meetn Bonus App" --icon='res/MBA.ico' --onedir --noconfirm --windowed App.py
 
+For the GPU:
+pyinstaller --add-binary C:/Users/Administrator/anaconda3/envs/ncu118/Lib/site-packages/onnxruntime/capi/onnxruntime_provid
+ers_cuda.dll:./onnxruntime/capi/ --add-binary C:/Users/Administrator/anaconda3/envs/ncu118/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_tensorrt.d
+ll:./onnxruntime/capi/  --hidden-import=numpy --hidden-import=numpy.core.multiarray --name "Meetn Bonus App" --icon='res/MBA.ico' --onedir --noconfirm --windowed App.py
+
+
 Installation file
 
 Refer to 'Inno_Setup/MBA.iss' file. It is Inno setup script.
