@@ -15,6 +15,7 @@ def background_change(new_background_image, source_image, blur_checked, chromake
     else:
         try:
             alpha_channel = input_session.run(source_image, new_background_image, only_mask=True)
+            cv2.imwrite('alpha.jpg', alpha_channel* 255)
             alpha_mask = np.repeat(alpha_channel[:, :, np.newaxis], 3, axis=2)
         except Exception as e:
             logging.info(f"Error Occurred: {e}")

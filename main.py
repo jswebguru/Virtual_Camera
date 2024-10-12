@@ -14,7 +14,7 @@ from get_cameras import get_cameras
 from get_image_path import list_files_in_directory
 from replace_with_chroma import find_dominant_colors
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
-from virtual_cam import feed_frame_to_vir_cam, resize
+from virtual_cam import feed_frame_to_vir_cam, resize, pad
 import concurrent.futures
 import argparse
 from ai_engine import Predictor
@@ -337,8 +337,6 @@ class VirtualCameraApp(QMainWindow):
         self.select_directory_button.clicked.connect(self.select_local_bg_folder)
         right_panel_layout.addWidget(self.select_directory_button)
 
-        # right_panel_layout.addWidget(self.bg_image_list)
-
         self.selected_bg_path = None
 
         self._pool = concurrent.futures.ThreadPoolExecutor()
@@ -501,9 +499,10 @@ class VirtualCameraApp(QMainWindow):
             self.camera_label.setText("Failed to capture image.")
             return
         self.cur_frame = cur_frame
-        cur_frame = resize(cur_frame)
+        cur_frame, new_height = resize(cur_frame)
         cool_frame = background_change(self.background_image, cur_frame, self.blur_switch.switch.isChecked(),
                                        self.chromakey, input_session=self.model)
+        cool_frame = pad(cool_frame, new_height)
         height, width, channel = cool_frame.shape
         cool_frame = cv2.cvtColor(cool_frame, cv2.COLOR_RGB2BGR)
         step = channel * width

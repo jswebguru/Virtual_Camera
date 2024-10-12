@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def resize(image, target_width=640, target_height=480):
+def resize(image, target_width=640):
     # Get current dimensions
     if image.shape[2] == 4:  # In case it's RGBA
         image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
@@ -14,6 +14,11 @@ def resize(image, target_width=640, target_height=480):
     new_width = target_width
     new_height = int(original_height * scale_factor)
     frame_rgb = cv2.resize(image, (new_width, new_height))
+    return frame_rgb, new_height
+
+
+def pad(frame_rgb, new_height, target_width=640, target_height=480):
+    # Prepare an RGBA blank canvas
     frame_padded = np.zeros((target_height, target_width, 4), dtype=np.uint8)
 
     # Overlay the resized frame on the middle of the canvas
