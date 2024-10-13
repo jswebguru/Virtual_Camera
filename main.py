@@ -17,7 +17,7 @@ from startup_config import add_to_startup, remove_from_startup, check_startup_re
 from virtual_cam import feed_frame_to_vir_cam, resize, pad
 import concurrent.futures
 from ai_engine import Predictor
-
+import json
 
 CREATION_FLAGS = 0
 if sys.platform == "win32":
@@ -41,11 +41,17 @@ class VirtualCameraApp(QMainWindow):
         super().__init__()
         self.cur_frame = None
         self.chromakey = None
+        self.camera_index = 0
+        self.background_image = None
+        self.background_image_location = True
+        self.selected_bg_path = None
+
         if os.path.exists('images'):
             self.pre_path = ''
         else:
             self.pre_path = 'C:/Program Files/Meetn Bonus App/'
         self.cameras = None
+        # self.load_settings(self.pre_path + 'res/settings.json')
         self.config = self.pre_path + 'res/model/deploy.yaml'
         self.setWindowTitle("Meet Bonus App")
         self.cur_vcam_width = 640
@@ -68,7 +74,6 @@ class VirtualCameraApp(QMainWindow):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.offset = QPoint()
-        self.background_image = None
         # Start the AkVCamManager process
         self.akv_cam_proc = None
         self.setStyleSheet(f"""  
@@ -337,7 +342,6 @@ class VirtualCameraApp(QMainWindow):
         self.select_directory_button.clicked.connect(self.select_local_bg_folder)
         right_panel_layout.addWidget(self.select_directory_button)
 
-        self.selected_bg_path = None
 
         self._pool = concurrent.futures.ThreadPoolExecutor()
         self._pool.submit(self.update_image_list, self.pre_path + 'images/Abstract')
@@ -360,6 +364,41 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.installEventFilter(self)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
+
+    def save_settings(self, file_path='settings.json'):
+        """
+        Save settings to a JSON file.
+
+        :param file_path: Path where the JSON file will be saved.
+        :param settings: A dictionary containing the settings to save.
+        """
+        settings = {
+            'camera': self.camera
+        }
+        try:
+            with open(file_path, 'w') as file:
+                json.dump(settings, file, indent=4)
+            print(f"Settings successfully saved to {file_path}.")
+        except Exception as e:
+            print(f"Failed to save settings: {e}")
+
+    def load_settings(self, file_path):
+        """
+        Load settings from a JSON file.
+
+        :param file_path: Path of the JSON file to load.
+        :return: A dictionary containing the loaded settings.
+        """
+        try:
+            with open(file_path, 'r') as file:
+                settings = json.load(file)
+            return settings
+        except FileNotFoundError:
+            print(f"No settings file found at {file_path}.")
+            return {}
+        except Exception as e:
+            print(f"Failed to load settings: {e}")
+            return {}
 
     def determine_chromakey(self):
         if self.cur_frame is None:
@@ -423,7 +462,7 @@ class VirtualCameraApp(QMainWindow):
             self.bg_image_list.addItem(item)
 
     @Slot(QListWidgetItem)
-    def set_background_image(self, item):
+    def  set_background_image(self, item):
         # Remove any existing styling from all items
         for i in range(self.bg_image_list.count()):
             self.bg_image_list.item(i).setBackground(Qt.transparent)
@@ -532,7 +571,7 @@ class VirtualCameraApp(QMainWindow):
             self.bg_local_button.setChecked(False)
             self.folder_dropdown.setVisible(True)
             self.select_directory_button.setVisible(False)
-            self.update_folder_list('images')
+            self.update_folder_list(self.pre_path + 'images')
         else:
             self.bg_included_button.setChecked(False)
             self.bg_local_button.setChecked(True)
