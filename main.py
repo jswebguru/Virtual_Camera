@@ -16,7 +16,6 @@ from replace_with_chroma import find_dominant_colors
 from startup_config import add_to_startup, remove_from_startup, check_startup_registry
 from virtual_cam import feed_frame_to_vir_cam, resize, pad
 import concurrent.futures
-import argparse
 from ai_engine import Predictor
 
 
@@ -47,6 +46,7 @@ class VirtualCameraApp(QMainWindow):
         else:
             self.pre_path = 'C:/Program Files/Meetn Bonus App/'
         self.cameras = None
+        self.config = self.pre_path + 'res/model/deploy.yaml'
         self.setWindowTitle("Meet Bonus App")
         self.cur_vcam_width = 640
         self.cur_vcam_height = 480
@@ -256,7 +256,7 @@ class VirtualCameraApp(QMainWindow):
         right_panel_layout = QVBoxLayout()
         right_panel_layout.setContentsMargins(5, 5, 5, 5)
         right_panel_layout.setSpacing(10)
-        self.model = Predictor(self.parse_args())
+        self.model = Predictor(self.config)
         self.bg_label = QLabel("Select a virtual background:")
         self.bg_label.setObjectName("SectionTitle")
         right_panel_layout.addWidget(self.bg_label)
@@ -514,20 +514,6 @@ class VirtualCameraApp(QMainWindow):
 
         q_img = QImage(cool_frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
-
-    def parse_args(self):
-        parser = argparse.ArgumentParser(
-            description='PP-HumanSeg inference for video')
-        parser.add_argument(
-            "--config",
-            help="The config file of the inference model.",
-            type=str,
-            default=self.pre_path + 'res/model/deploy.yaml')
-
-        parser.add_argument(
-            '--use_post_process', help='Use post process.', action='store_true')
-
-        return parser.parse_args()
 
     def stop_camera(self):
         if self.cap:

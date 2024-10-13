@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Meetn Bonus App"
-#define MyAppVersion "1.1"
+#define MyAppVersion "1.2"
 #define MyAppPublisher "Rick Raddatz, Meetn"
 #define MyAppURL "https://www.meetn.com/"
 #define MyAppExeName "Meetn Bonus App.exe"

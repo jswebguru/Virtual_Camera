@@ -49,9 +49,9 @@ class DeployConfig:
 
 class Predictor:
 
-    def __init__(self, args):
-        self.args = args
-        self.cfg = DeployConfig(args.config)
+    def __init__(self, config):
+
+        self.cfg = DeployConfig(config)
         self.compose = T.Compose(self.cfg.transforms)
 
         pred_cfg = PredictConfig(self.cfg.model, self.cfg.params)

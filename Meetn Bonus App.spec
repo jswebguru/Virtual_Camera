@@ -4,7 +4,7 @@
 a = Analysis(
     ['App.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('venv\Lib\site-packages\paddle\libs\mklml.dll', '.')],
     datas=[],
     hiddenimports=[],
     hookspath=[],
