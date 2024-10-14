@@ -98,6 +98,7 @@ class ClickableLabel(QLabel):
         if event.button() == Qt.LeftButton:
             self.clicked.emit()
 
+
 class RoundedItemDelegate(QStyledItemDelegate):
     def __init__(self, radius=10, parent=None):
         super().__init__(parent)

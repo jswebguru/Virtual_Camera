@@ -6,7 +6,7 @@ import numpy as np
 from background_removal import background_change
 from PySide6.QtWidgets import (QApplication, QMainWindow, QLabel, QComboBox,
                                QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-                               QWidget, QFileDialog, QPushButton, QSystemTrayIcon, QMenu)
+                               QWidget, QFileDialog, QPushButton, QSystemTrayIcon, QMenu, QAbstractItemView)
 from PySide6.QtGui import QPixmap, QImage, QIcon, QPainter, QPainterPath, QAction
 from PySide6.QtCore import QTimer, Qt, QPoint, QRectF, Slot, QEvent
 from Toggle_Switch import LabeledToggleSwitch, RoundedItemDelegate
@@ -39,19 +39,22 @@ WINDOW_HEIGHT = 600
 class VirtualCameraApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.included = True
         self.cur_frame = None
         self.chromakey = None
         self.camera_index = 0
         self.background_image = None
-        self.background_image_location = True
+        self.scroll_position = 0
         self.selected_bg_path = None
+        self.selected_bg_index = 0
+        self._pool = concurrent.futures.ThreadPoolExecutor()
 
         if os.path.exists('images'):
             self.pre_path = ''
         else:
             self.pre_path = 'C:/Program Files/Meetn Bonus App/'
         self.cameras = None
-        # self.load_settings(self.pre_path + 'res/settings.json')
+        self.load_settings(self.pre_path + 'res/settings.json')
         self.config = self.pre_path + 'res/model/deploy.yaml'
         self.setWindowTitle("Meet Bonus App")
         self.cur_vcam_width = 640
@@ -243,7 +246,9 @@ class VirtualCameraApp(QMainWindow):
         self.green_screen_switch = LabeledToggleSwitch("I have a green or blue screen", self)
         self.green_screen_switch.switch.stateChanged.connect(self.green_switch_changed)
         features_layout.addWidget(self.green_screen_switch)
-
+        if self.chromakey is not None:
+            self.chromakey = np.array(self.chromakey)
+            self.green_screen_switch.switch.setChecked(True)
         self.blur_switch = LabeledToggleSwitch("Blur Background", self)
 
         features_layout.addWidget(self.blur_switch)
@@ -270,11 +275,19 @@ class VirtualCameraApp(QMainWindow):
         bg_select_layout = QHBoxLayout(button_container)
         bg_select_layout.setContentsMargins(0, 0, 0, 0)
         bg_select_layout.setSpacing(0)
+
         self.bg_included_button = QPushButton("Included")
         self.bg_local_button = QPushButton("Local")
         self.bg_included_button.setCheckable(True)
         self.bg_local_button.setCheckable(True)
-        self.bg_included_button.setChecked(True)
+        self.bg_included_button.setChecked(self.included)
+
+        # Button to open directory - initially hidden
+        self.select_directory_button = QPushButton("Select Directory")
+        self.select_directory_button.setObjectName("FolderOpen")
+        self.select_directory_button.setVisible(False)
+        self.select_directory_button.clicked.connect(self.select_local_bg_folder)
+
 
         self.bg_included_button.clicked.connect(lambda: self.switch_bg_selection("included"))
         self.bg_local_button.clicked.connect(lambda: self.switch_bg_selection("local"))
@@ -320,12 +333,11 @@ class VirtualCameraApp(QMainWindow):
         bg_select_layout.addWidget(self.bg_local_button)
 
         right_panel_layout.addWidget(button_container)
+        self.folder_dropdown = QComboBox()
+        right_panel_layout.addWidget(self.folder_dropdown)
+        right_panel_layout.addWidget(self.select_directory_button)
 
         # New: ComboBox for current folder path
-        self.folder_dropdown = QComboBox()
-        self.update_folder_list(self.pre_path + 'images')
-        self.folder_dropdown.currentIndexChanged.connect(self.folder_selection_changed)
-        right_panel_layout.addWidget(self.folder_dropdown)
 
         self.bg_image_list = QListWidget()
         self.bg_image_list.setViewMode(QListWidget.IconMode)
@@ -334,18 +346,16 @@ class VirtualCameraApp(QMainWindow):
         self.bg_image_list.setItemDelegate(RoundedItemDelegate())
         self.bg_image_list.setSpacing(5)
         self.bg_image_list.setDragEnabled(False)
-
-        # Button to open directory - initially hidden
-        self.select_directory_button = QPushButton("Select Directory")
-        self.select_directory_button.setObjectName("FolderOpen")
-        self.select_directory_button.setVisible(False)
-        self.select_directory_button.clicked.connect(self.select_local_bg_folder)
-        right_panel_layout.addWidget(self.select_directory_button)
-
-
-        self._pool = concurrent.futures.ThreadPoolExecutor()
-        self._pool.submit(self.update_image_list, self.pre_path + 'images/Abstract')
         self.bg_image_list.itemClicked.connect(self.set_background_image)
+        if self.included:
+            self.update_folder_list(self.pre_path + 'images')
+        else:
+            self.bg_included_button.setChecked(False)
+            self.bg_local_button.setChecked(True)
+            self.folder_dropdown.setVisible(False)
+            self.select_directory_button.setVisible(True)
+        self.update_image_list(os.path.dirname(self.selected_bg_path))
+
         right_panel_layout.addWidget(self.bg_image_list)
 
         central_layout.addLayout(left_panel_layout, 1)
@@ -356,25 +366,32 @@ class VirtualCameraApp(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-        self.start_camera()
-
-        # New: Method to update folder dropdown list
-
+        self.start_camera(self.camera_index)
+        if type(self.camera_index) is str:
+            self.cam_dropdown.setCurrentIndex(len(self.cameras))
         self.cam_dropdown.installEventFilter(self)
         self.folder_dropdown.installEventFilter(self)
+        self.folder_dropdown.currentIndexChanged.connect(self.folder_selection_changed)
+
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
 
-    def save_settings(self, file_path='settings.json'):
-        """
-        Save settings to a JSON file.
+        # self.bg_image_list.item(self.selected_bg_index).setSelected(True)
 
-        :param file_path: Path where the JSON file will be saved.
-        :param settings: A dictionary containing the settings to save.
-        """
+        item = self.bg_image_list.item(self.selected_bg_index)
+        item.setSelected(True)
+        self.bg_image_list.scrollToItem(item, QAbstractItemView.PositionAtTop)
+
+    def save_settings(self, file_path='res/settings.json'):
         settings = {
-            'camera': self.camera
+            'camera': self.camera_index,
+            'chroma': self.chromakey if self.chromakey is None else self.chromakey.tolist(),
+            'background': [self.selected_bg_index, self.selected_bg_path],
+            'scroll': self.bg_image_list.verticalScrollBar().value(),
+            'included': self.bg_included_button.isChecked()
         }
+
+        print(self.bg_image_list.verticalScrollBar().maximum())
         try:
             with open(file_path, 'w') as file:
                 json.dump(settings, file, indent=4)
@@ -382,7 +399,7 @@ class VirtualCameraApp(QMainWindow):
         except Exception as e:
             print(f"Failed to save settings: {e}")
 
-    def load_settings(self, file_path):
+    def load_settings(self, file_path='res/settings.json'):
         """
         Load settings from a JSON file.
 
@@ -392,13 +409,18 @@ class VirtualCameraApp(QMainWindow):
         try:
             with open(file_path, 'r') as file:
                 settings = json.load(file)
-            return settings
         except FileNotFoundError:
             print(f"No settings file found at {file_path}.")
-            return {}
         except Exception as e:
             print(f"Failed to load settings: {e}")
-            return {}
+
+        self.camera_index = settings['camera']
+        self.chromakey = settings['chroma']
+        self.selected_bg_index = settings['background'][0]
+        self.scroll_position = settings['scroll']
+        self.selected_bg_path = settings['background'][1]
+        self.background_image = cv2.imread(self.selected_bg_path)
+        self.included = settings['included']
 
     def determine_chromakey(self):
         if self.cur_frame is None:
@@ -446,8 +468,16 @@ class VirtualCameraApp(QMainWindow):
         self.folder_dropdown.clear()
         folders = list_files_in_directory(base_dir, folders_only=True)
         if folders:
+            normalized_path1 = list(map(os.path.normpath, folders))
+
+            try:
+                index = normalized_path1.index(os.path.normpath(os.path.dirname(self.selected_bg_path)))
+            except Exception as e:
+                index = 0
+                print('Found non path: ', e)
             simplified_folders = list(map(lambda folder: folder.split('/')[-1], folders))
             self.folder_dropdown.addItems(simplified_folders)
+            self.folder_dropdown.setCurrentIndex(index)
 
     def update_image_list(self, path):
         self.bg_image_list.clear()
@@ -462,21 +492,19 @@ class VirtualCameraApp(QMainWindow):
             self.bg_image_list.addItem(item)
 
     @Slot(QListWidgetItem)
-    def  set_background_image(self, item):
+    def set_background_image(self, item):
         # Remove any existing styling from all items
         for i in range(self.bg_image_list.count()):
             self.bg_image_list.item(i).setBackground(Qt.transparent)
 
         if item.data(Qt.UserRole):
             self.selected_bg_path = item.data(Qt.UserRole)
+            self.selected_bg_index = self.bg_image_list.row(item)
             try:
                 if self.bg_image_list.row(item) == 0:
                     self.background_image = None
                 else:
                     self.background_image = cv2.imread(self.selected_bg_path)
-
-                # Highlight the selected item with a border
-                item.setBackground(Qt.blue)  # Set the background color for selected
 
             except Exception as e:
                 print(f'{e} has occurred.')
@@ -505,6 +533,7 @@ class VirtualCameraApp(QMainWindow):
         self.stop_camera()
         self.akv_cam_proc.stdin.close()
         self.akv_cam_proc.wait()
+        self.save_settings()
         event.accept()
 
     def toggleMaximized(self):
@@ -514,6 +543,7 @@ class VirtualCameraApp(QMainWindow):
             self.showMaximized()
 
     def start_camera(self, source=0):
+        self.camera_index = source
         if isinstance(source, str):
             self.cap = cv2.VideoCapture(source)
         else:
