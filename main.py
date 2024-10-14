@@ -1,6 +1,9 @@
+import logging
 import os.path
 import subprocess
 import sys
+import time
+
 import cv2
 import numpy as np
 from background_removal import background_change
@@ -288,7 +291,6 @@ class VirtualCameraApp(QMainWindow):
         self.select_directory_button.setVisible(False)
         self.select_directory_button.clicked.connect(self.select_local_bg_folder)
 
-
         self.bg_included_button.clicked.connect(lambda: self.switch_bg_selection("included"))
         self.bg_local_button.clicked.connect(lambda: self.switch_bg_selection("local"))
 
@@ -354,8 +356,10 @@ class VirtualCameraApp(QMainWindow):
             self.bg_local_button.setChecked(True)
             self.folder_dropdown.setVisible(False)
             self.select_directory_button.setVisible(True)
-        self.update_image_list(os.path.dirname(self.selected_bg_path))
-
+        if self.selected_bg_path is not None:
+            self.update_image_list(os.path.dirname(self.selected_bg_path))
+        else:
+            self.update_image_list(self.pre_path + 'images/Abstract')
         right_panel_layout.addWidget(self.bg_image_list)
 
         central_layout.addLayout(left_panel_layout, 1)
@@ -376,8 +380,6 @@ class VirtualCameraApp(QMainWindow):
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Set the window size
         self.center()  # Center the window on the screen
 
-        # self.bg_image_list.item(self.selected_bg_index).setSelected(True)
-
         item = self.bg_image_list.item(self.selected_bg_index)
         item.setSelected(True)
         self.bg_image_list.scrollToItem(item, QAbstractItemView.PositionAtTop)
@@ -391,13 +393,12 @@ class VirtualCameraApp(QMainWindow):
             'included': self.bg_included_button.isChecked()
         }
 
-        print(self.bg_image_list.verticalScrollBar().maximum())
         try:
             with open(file_path, 'w') as file:
                 json.dump(settings, file, indent=4)
-            print(f"Settings successfully saved to {file_path}.")
+            logging.info(f"Settings successfully saved to {file_path}.")
         except Exception as e:
-            print(f"Failed to save settings: {e}")
+            logging.info(f"Failed to save settings: {e}")
 
     def load_settings(self, file_path='res/settings.json'):
         """
@@ -410,9 +411,9 @@ class VirtualCameraApp(QMainWindow):
             with open(file_path, 'r') as file:
                 settings = json.load(file)
         except FileNotFoundError:
-            print(f"No settings file found at {file_path}.")
+            logging.info(f"No settings file found at {file_path}.")
         except Exception as e:
-            print(f"Failed to load settings: {e}")
+            logging.info(f"Failed to load settings: {e}")
 
         self.camera_index = settings['camera']
         self.chromakey = settings['chroma']
@@ -424,7 +425,7 @@ class VirtualCameraApp(QMainWindow):
 
     def determine_chromakey(self):
         if self.cur_frame is None:
-            print('Current frame is not selected.')
+            logging.info('Current frame is not selected.')
             return
         # Convert from RGB to BGR (since OpenCV uses BGR)
         input_image = cv2.cvtColor(self.cur_frame, cv2.COLOR_RGB2BGR)
@@ -474,7 +475,7 @@ class VirtualCameraApp(QMainWindow):
                 index = normalized_path1.index(os.path.normpath(os.path.dirname(self.selected_bg_path)))
             except Exception as e:
                 index = 0
-                print('Found non path: ', e)
+                logging.info('Found non path: ', e)
             simplified_folders = list(map(lambda folder: folder.split('/')[-1], folders))
             self.folder_dropdown.addItems(simplified_folders)
             self.folder_dropdown.setCurrentIndex(index)
@@ -507,7 +508,7 @@ class VirtualCameraApp(QMainWindow):
                     self.background_image = cv2.imread(self.selected_bg_path)
 
             except Exception as e:
-                print(f'{e} has occurred.')
+                logging.info(f'{e} has occurred.')
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -579,7 +580,7 @@ class VirtualCameraApp(QMainWindow):
             feed_frame_to_vir_cam(self.akv_cam_proc, cool_frame)
 
         except Exception as e:
-            print(f"An error occurred1: {e}")
+            logging.info(f"An error occurred1: {e}")
 
         q_img = QImage(cool_frame.data, width, height, step, QImage.Format_RGB888)
         self.camera_label.setPixmap(QPixmap.fromImage(q_img))
