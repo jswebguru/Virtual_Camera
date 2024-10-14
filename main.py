@@ -355,7 +355,7 @@ class VirtualCameraApp(QMainWindow):
             self.folder_dropdown.setVisible(False)
             self.select_directory_button.setVisible(True)
         if self.selected_bg_path is not None:
-            self.update_image_list(os.path.dirname(self.selected_bg_path))
+            self.update_image_list(os.path.dirname(self.pre_path + self.selected_bg_path))
         else:
             self.update_image_list(self.pre_path + 'images/Abstract')
         right_panel_layout.addWidget(self.bg_image_list)
