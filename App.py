@@ -50,6 +50,7 @@ if __name__ == "__main__":
         done = True
         thread.join()
         splash.finish(window)
+
     else:
         from main import VirtualCameraApp
         window = VirtualCameraApp()

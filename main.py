@@ -2,8 +2,6 @@ import logging
 import os.path
 import subprocess
 import sys
-import time
-
 import cv2
 import numpy as np
 from background_removal import background_change
@@ -534,7 +532,7 @@ class VirtualCameraApp(QMainWindow):
         self.stop_camera()
         self.akv_cam_proc.stdin.close()
         self.akv_cam_proc.wait()
-        self.save_settings()
+        self.save_settings(self.pre_path + 'res/settings.json')
         event.accept()
 
     def toggleMaximized(self):

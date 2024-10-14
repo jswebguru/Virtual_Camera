@@ -1,10 +1,10 @@
 {
-    "camera": 0,
+    "camera": "videos/output1.mp4",
     "chroma": null,
     "background": [
-        49,
-        "images/Abstract\\f525bfa1.jpg"
+        30,
+        "images/Abstract\\825820b3.jpg"
     ],
-    "scroll": 2854,
+    "scroll": 1250,
     "included": true
 }
